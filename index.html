@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>羊了个羊</title>
+    <style>
+        /* ===== Apple HIG Reset ===== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', BlinkMacSystemFont,
+                         'Helvetica Neue', 'PingFang SC', sans-serif;
+            background: #0a0a0c;
+            background-image: radial-gradient(ellipse at 50% 40%, #1a1a22 0%, #0a0a0c 70%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ===== iPhone 18 Pro Frame ===== */
+        #iphone-frame {
+            position: relative;
+            width: 393px;
+            height: 852px;
+            background: #1c1c1e;
+            border-radius: 55px;
+            border: 3px solid #5a5a5e;
+            box-shadow:
+                /* titanium outer bevel */
+                0 0 0 1px rgba(255,255,255,0.08),
+                0 0 0 2px #4a4a4e,
+                0 0 0 3px rgba(0,0,0,0.6),
+                /* physical depth */
+                0 40px 80px rgba(0,0,0,0.55),
+                0 10px 30px rgba(0,0,0,0.35),
+                /* inner screen glow */
+                inset 0 0 30px rgba(0,0,0,0.3),
+                /* titanium highlight */
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+
+        /* Side buttons — volume */
+        #iphone-frame::before {
+            content: '';
+            position: absolute;
+            left: -3px;
+            top: 170px;
+            width: 3px;
+            height: 36px;
+            background: linear-gradient(180deg, #6a6a6e, #4a4a4e, #6a6a6e);
+            border-radius: 2px 0 0 2px;
+            z-index: 50;
+            box-shadow: 0 48px 0 0 #555;
+        }
+
+        /* Side buttons — power */
+        #iphone-frame::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 210px;
+            width: 3px;
+            height: 60px;
+            background: linear-gradient(180deg, #6a6a6e, #4a4a4e, #6a6a6e);
+            border-radius: 0 2px 2px 0;
+            z-index: 50;
+        }
+
+        /* Dynamic Island */
+        #dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 126px;
+            height: 37px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 100;
+            box-shadow:
+                inset 0 0 4px rgba(0,0,0,0.8),
+                0 0 0 1px rgba(255,255,255,0.04);
+        }
+
+        /* Camera dot in Dynamic Island */
+        #dynamic-island::after {
+            content: '';
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle at 40% 40%, #1a1a2e, #0a0a12);
+            border-radius: 50%;
+            border: 1px solid #222;
+            box-shadow: inset 0 0 2px rgba(50,50,120,0.3);
+        }
+
+        /* Screen Content */
+        #screen {
+            position: absolute;
+            inset: 0;
+            border-radius: 52px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, #1a3a1a 0%, #0d250d 50%, #0a1e0a 100%);
+            /* guarantee all children within bounds */
+            contain: layout paint;
+        }
+
+        /* Safe area top spacer */
+        #safe-top {
+            height: 59px; /* status bar + dynamic island */
+            flex-shrink: 0;
+        }
+
+        /* ===== iOS Navigation Bar ===== */
+        #nav-bar {
+            position: relative;
+            z-index: 20;
+            padding: 0 20px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #nav-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        #score-badge {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 6px 14px;
+            border-radius: 100px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* ===== Card Area ===== */
+        #card-area {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Subtle grid pattern */
+        #card-area::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(circle, rgba(80,160,80,0.15) 1px, transparent 1px);
+            background-size: 24px 24px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== iOS Bottom Toolbar ===== */
+        #toolbar {
+            position: relative;
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 10px 24px;
+            background: rgba(0,0,0,0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid rgba(255,255,255,0.08);
+        }
+
+        .tool-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-width: 100px;
+            height: 44px; /* Apple HIG: min touch target */
+            padding: 0 20px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #fff;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s ease, background 0.15s ease, opacity 0.15s ease;
+        }
+
+        .tool-btn:active:not(:disabled) {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .tool-btn .icon {
+            font-size: 18px;
+        }
+
+        /* ===== iOS Tray Area ===== */
+        #tray-area {
+            position: relative;
+            z-index: 20;
+            padding: 10px 16px 6px;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid rgba(255,255,255,0.08);
+        }
+
+        #tray {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .tray-slot {
+            width: 34px;
+            height: 42px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 1px dashed rgba(255,255,255,0.08);
+        }
+
+        /* Home indicator area */
+        #home-indicator-area {
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #home-indicator {
+            width: 134px;
+            height: 5px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 100px;
+        }
+
+        /* ===== Card Styles (Apple HIG) ===== */
+        .card {
+            position: absolute;
+            width: 52px;
+            height: 60px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            line-height: 1;
+            cursor: pointer;
+            user-select: none;
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.25),
+                0 1px 2px rgba(0,0,0,0.15);
+            transition: transform 0.12s cubic-bezier(0.25, 0.1, 0.25, 1),
+                        box-shadow 0.12s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        .card.available {
+            cursor: pointer;
+        }
+
+        .card.available:active {
+            transform: scale(0.92);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .card.blocked {
+            opacity: 0.4;
+            cursor: default;
+            filter: grayscale(0.6) brightness(0.7);
+        }
+
+        .card.blocked::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.15);
+            border-radius: 12px;
+        }
+
+        /* ===== Tray Card ===== */
+        .tray-card {
+            width: 30px;
+            height: 38px;
+            background: rgba(255,255,255,0.92);
+            border-radius: 7px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            line-height: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .tray-card.anim-enter {
+            animation: iosSpringIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .tray-card.anim-remove {
+            animation: iosMatchPop 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+
+        @keyframes iosSpringIn {
+            0%   { transform: scale(0.3) translateY(-12px); opacity: 0; }
+            60%  { transform: scale(1.08) translateY(0);    opacity: 1; }
+            100% { transform: scale(1) translateY(0);       opacity: 1; }
+        }
+
+        @keyframes iosMatchPop {
+            0%   { transform: scale(1);   opacity: 1; }
+            30%  { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0);   opacity: 0; }
+        }
+
+        /* ===== iOS Modal Sheet ===== */
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            justify-content: flex-end;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2000;
+            border-radius: inherit;
+            overflow: hidden;
+        }
+
+        #overlay.show {
+            display: flex;
+            animation: overlayFadeIn 0.3s ease forwards;
+        }
+
+        @keyframes overlayFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        #modal {
+            width: 100%;
+            padding: 32px 24px 48px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+            animation: sheetSlideUp 0.4s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+        }
+
+        #modal.win  { background: rgba(52, 199, 89, 0.95); }
+        #modal.lose { background: rgba(255, 69, 58, 0.95); }
+
+        @keyframes sheetSlideUp {
+            0%   { transform: translateY(100%); opacity: 0.5; }
+            100% { transform: translateY(0);    opacity: 1; }
+        }
+
+        #modal-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+        }
+
+        #modal-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        #modal-message {
+            font-size: 17px;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 28px;
+        }
+
+        #restart-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 50px;
+            min-width: 200px;
+            padding: 0 32px;
+            font-size: 17px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #34C759;
+            background: #fff;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease, opacity 0.1s ease;
+        }
+
+        #restart-btn:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+
+        /* ===== Responsive: small screens scale frame to fit ===== */
+        @media (max-height: 900px) and (min-width: 420px) {
+            #iphone-frame {
+                transform: scale(0.85);
+                transform-origin: center center;
+            }
+        }
+        @media (max-height: 780px) and (min-width: 420px) {
+            #iphone-frame {
+                transform: scale(0.72);
+                transform-origin: center center;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #iphone-frame {
+                border-radius: 0;
+                border: none;
+                width: 100%;
+                height: 100vh;
+                box-shadow: none;
+            }
+            #iphone-frame::before,
+            #iphone-frame::after { display: none; }
+            #screen { border-radius: 0; }
+            #dynamic-island { display: none; }
+            #safe-top { height: 44px; }
+        }
+    </style>
+</head>
+<body>
+<div id="iphone-frame">
+    <div id="dynamic-island"></div>
+    <div id="screen">
+        <div id="safe-top"></div>
+
+        <div id="nav-bar">
+            <div id="nav-title">🐑 羊了个羊</div>
+            <div id="score-badge">得分 <span id="score">0</span></div>
+        </div>
+
+        <div id="card-area"></div>
+
+        <div id="toolbar">
+            <button class="tool-btn" id="undo-btn" disabled>
+                <span class="icon">↩</span> 撤回
+            </button>
+            <button class="tool-btn" id="shuffle-btn">
+                <span class="icon">🔀</span> 洗牌
+            </button>
+        </div>
+
+        <div id="tray-area">
+            <div id="tray">
+                <div class="tray-slot" id="slot-0"></div>
+                <div class="tray-slot" id="slot-1"></div>
+                <div class="tray-slot" id="slot-2"></div>
+                <div class="tray-slot" id="slot-3"></div>
+                <div class="tray-slot" id="slot-4"></div>
+                <div class="tray-slot" id="slot-5"></div>
+                <div class="tray-slot" id="slot-6"></div>
+                <div class="tray-slot" id="slot-7"></div>
+                <div class="tray-slot" id="slot-8"></div>
+            </div>
+        </div>
+
+        <div id="home-indicator-area">
+            <div id="home-indicator"></div>
+        </div>
+
+        <div id="overlay">
+            <div id="modal">
+                <div id="modal-icon"></div>
+                <div id="modal-title"></div>
+                <div id="modal-message"></div>
+                <button id="restart-btn">再来一局</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+ *  CONFIG — 难度降低50%
+ *  原版: 10种×6张=60牌, 7槽位, 3层
+ *  简版: 6种×6张=36牌, 9槽位, 2层
+ * =================================================== */
+const CFG = {
+    CARD_W: 52,
+    CARD_H: 60,
+    TYPES: ['🍎', '🍊', '🍋', '🍇', '🍓', '🫐'],  // 6种（原10种）
+    PER_TYPE: 6,       // 每种6张 = 36总牌数
+    TRAY_MAX: 9,       // 9槽位（原7）
+    MATCH: 3,
+    LAYERS: [
+        { count: 20, xHalf: 140, yHalf: 110, yBias: 10 },   // 底层20张
+        { count: 16, xHalf: 100, yHalf:  85, yBias: -15 }    // 顶层16张
+    ]
+};
+
+/* ===================================================
+ *  DOM
+ * =================================================== */
+const EL = {
+    cardArea:   document.getElementById('card-area'),
+    slots:      Array.from({ length: CFG.TRAY_MAX }, (_, i) => document.getElementById(`slot-${i}`)),
+    undoBtn:    document.getElementById('undo-btn'),
+    shuffleBtn: document.getElementById('shuffle-btn'),
+    scoreEl:    document.getElementById('score'),
+    overlay:    document.getElementById('overlay'),
+    modal:      document.getElementById('modal'),
+    modalIcon:  document.getElementById('modal-icon'),
+    modalTitle: document.getElementById('modal-title'),
+    modalMsg:   document.getElementById('modal-message'),
+    restartBtn: document.getElementById('restart-btn')
+};
+
+/* ===================================================
+ *  STATE
+ * =================================================== */
+let state = {
+    cards: [],
+    tray: [],
+    score: 0,
+    history: null,
+    animLock: false,
+    gameOver: false
+};
+
+/* ===================================================
+ *  UTILS
+ * =================================================== */
+function fisherYates(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function cloneTray(tray) {
+    return tray.map(c => ({ id: c.id, type: c.type }));
+}
+
+/* ===================================================
+ *  CARD GENERATION
+ * =================================================== */
+function buildPool() {
+    const pool = [];
+    CFG.TYPES.forEach(t => {
+        for (let i = 0; i < CFG.PER_TYPE; i++) pool.push(t);
+    });
+    return fisherYates(pool);
+}
+
+function generateCards() {
+    const areaW = EL.cardArea.offsetWidth  || 360;
+    const areaH = EL.cardArea.offsetHeight || 380;
+    const cx = areaW / 2;
+    const cy = areaH / 2;
+    const pool = buildPool();
+    const cards = [];
+    let idx = 0;
+
+    CFG.LAYERS.forEach((layer, layerIdx) => {
+        for (let i = 0; i < layer.count; i++) {
+            const rawX = cx - CFG.CARD_W / 2 + (Math.random() * 2 - 1) * layer.xHalf;
+            const rawY = cy + layer.yBias - CFG.CARD_H / 2 + (Math.random() * 2 - 1) * layer.yHalf;
+            cards.push({
+                id: `c${idx}`,
+                type: pool[idx],
+                x: Math.max(6, Math.min(areaW - CFG.CARD_W - 6, rawX)),
+                y: Math.max(6, Math.min(areaH - CFG.CARD_H - 6, rawY)),
+                layer: layerIdx,
+                removed: false
+            });
+            idx++;
+        }
+    });
+
+    return cards;
+}
+
+/* ===================================================
+ *  OCCLUSION
+ * =================================================== */
+function overlaps(a, b) {
+    const tol = 1;
+    return !(
+        a.x + CFG.CARD_W - tol <= b.x ||
+        b.x + CFG.CARD_W - tol <= a.x ||
+        a.y + CFG.CARD_H - tol <= b.y ||
+        b.y + CFG.CARD_H - tol <= a.y
+    );
+}
+
+function isBlocked(card) {
+    for (const other of state.cards) {
+        if (other.id === card.id) continue;
+        if (other.removed) continue;
+        if (other.layer <= card.layer) continue;
+        if (overlaps(card, other)) return true;
+    }
+    return false;
+}
+
+/* ===================================================
+ *  RENDER
+ * =================================================== */
+function renderCards() {
+    EL.cardArea.innerHTML = '';
+
+    const sorted = [...state.cards].sort((a, b) => a.layer - b.layer);
+
+    sorted.forEach(card => {
+        if (card.removed) return;
+
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.left   = card.x + 'px';
+        el.style.top    = card.y + 'px';
+        el.style.zIndex = String(card.layer * 20 + 1);
+        el.textContent   = card.type;
+
+        const blocked = isBlocked(card);
+        if (blocked) {
+            el.classList.add('blocked');
+        } else {
+            el.classList.add('available');
+            el.addEventListener('click', () => onCardClick(card), { once: true });
+        }
+
+        EL.cardArea.appendChild(el);
+    });
+}
+
+function renderTray(animate) {
+    EL.slots.forEach((slot, i) => {
+        slot.innerHTML = '';
+        const card = state.tray[i];
+        if (!card) return;
+
+        const el = document.createElement('div');
+        el.className = 'tray-card';
+        el.textContent = card.type;
+        if (animate && i === state.tray.length - 1) {
+            el.classList.add('anim-enter');
+        }
+        slot.appendChild(el);
+    });
+}
+
+function renderScore() {
+    EL.scoreEl.textContent = String(state.score);
+}
+
+function renderUndoBtn() {
+    EL.undoBtn.disabled = state.history === null || state.animLock;
+}
+
+function render(animateTray) {
+    renderCards();
+    renderTray(animateTray);
+    renderScore();
+    renderUndoBtn();
+}
+
+/* ===================================================
+ *  MATCH LOGIC
+ * =================================================== */
+function checkMatch() {
+    const counts = {};
+    state.tray.forEach(c => { counts[c.type] = (counts[c.type] || 0) + 1; });
+
+    const matchType = Object.keys(counts).find(t => counts[t] >= CFG.MATCH);
+    if (!matchType) {
+        checkEndCondition();
+        return;
+    }
+
+    state.animLock = true;
+    const toRemoveIds = [];
+    let found = 0;
+    for (const c of state.tray) {
+        if (c.type === matchType && found < CFG.MATCH) {
+            toRemoveIds.push(c.id);
+            found++;
+        }
+    }
+
+    // Animate removal
+    EL.slots.forEach((slot, i) => {
+        const card = state.tray[i];
+        if (card && toRemoveIds.includes(card.id)) {
+            const el = slot.querySelector('.tray-card');
+            if (el) el.classList.add('anim-remove');
+        }
+    });
+
+    setTimeout(() => {
+        toRemoveIds.forEach(id => {
+            const idx = state.tray.findIndex(c => c.id === id);
+            if (idx !== -1) state.tray.splice(idx, 1);
+        });
+
+        state.score   += 10;
+        state.history  = null;
+        state.animLock = false;
+
+        render(false);
+        setTimeout(checkMatch, 80);
+    }, 350);
+}
+
+/* ===================================================
+ *  WIN / LOSE
+ * =================================================== */
+function checkEndCondition() {
+    const remaining = state.cards.filter(c => !c.removed);
+
+    if (remaining.length === 0 && state.tray.length === 0) {
+        state.gameOver = true;
+        showModal('win', '🎉', '恭喜通关！', `最终得分: ${state.score}`);
+        return;
+    }
+
+    if (state.tray.length >= CFG.TRAY_MAX) {
+        state.gameOver = true;
+        showModal('lose', '💔', '槽位已满', `得分: ${state.score}`);
+        return;
+    }
+
+    const anyAvailable = remaining.some(c => !isBlocked(c));
+    if (!anyAvailable && remaining.length > 0 && state.tray.length > 0) {
+        state.gameOver = true;
+        showModal('lose', '😔', '无路可走', `没有可点击的牌了！得分: ${state.score}`);
+    }
+}
+
+function showModal(type, icon, title, message) {
+    EL.modal.className     = type;
+    EL.modalIcon.textContent = icon;
+    EL.modalTitle.textContent = title;
+    EL.modalMsg.textContent   = message;
+    EL.overlay.classList.add('show');
+}
+
+function hideModal() {
+    EL.overlay.classList.remove('show');
+}
+
+/* ===================================================
+ *  CARD CLICK
+ * =================================================== */
+function onCardClick(card) {
+    if (state.animLock)  return;
+    if (state.gameOver)  return;
+    if (card.removed)    return;
+    if (isBlocked(card)) return;
+    if (state.tray.length >= CFG.TRAY_MAX) return;
+
+    state.history = {
+        cardId: card.id,
+        tray: cloneTray(state.tray)
+    };
+
+    card.removed = true;
+    state.tray.push({ id: card.id, type: card.type });
+
+    render(true);
+    setTimeout(checkMatch, 120);
+}
+
+/* ===================================================
+ *  UNDO
+ * =================================================== */
+function onUndo() {
+    if (state.animLock || state.history === null || state.gameOver) return;
+
+    const snap = state.history;
+    state.history = null;
+
+    const card = state.cards.find(c => c.id === snap.cardId);
+    if (card) card.removed = false;
+
+    const snapTrayIds = new Set(snap.tray.map(c => c.id));
+    const currentTrayIds = new Set(state.tray.map(c => c.id));
+
+    currentTrayIds.forEach(id => {
+        if (!snapTrayIds.has(id)) {
+            const c = state.cards.find(gc => gc.id === id);
+            if (c) c.removed = false;
+        }
+    });
+
+    state.tray = cloneTray(snap.tray);
+    render(false);
+}
+
+/* ===================================================
+ *  SHUFFLE
+ * =================================================== */
+function onShuffle() {
+    if (state.animLock || state.gameOver) return;
+
+    const visible = state.cards.filter(c => !c.removed);
+    if (visible.length === 0) return;
+
+    const types = fisherYates(visible.map(c => c.type));
+    visible.forEach((card, i) => { card.type = types[i]; });
+    state.history = null;
+
+    render(false);
+}
+
+/* ===================================================
+ *  NEW GAME
+ * =================================================== */
+function startGame() {
+    state = {
+        cards: generateCards(),
+        tray: [],
+        score: 0,
+        history: null,
+        animLock: false,
+        gameOver: false
+    };
+    hideModal();
+    render(false);
+}
+
+/* ===================================================
+ *  EVENTS
+ * =================================================== */
+EL.undoBtn.addEventListener('click', onUndo);
+EL.shuffleBtn.addEventListener('click', onShuffle);
+EL.restartBtn.addEventListener('click', startGame);
+
+/* ===================================================
+ *  INIT
+ * =================================================== */
+requestAnimationFrame(() => { startGame(); });
+</script>
+</body>
+</html>
